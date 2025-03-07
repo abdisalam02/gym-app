@@ -78,6 +78,12 @@ export default function WorkoutTabs() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const selectedDateString = selectedDate.toISOString().split("T")[0];
 
+  // Move the isToday function to the top of the component
+  const isToday = (someDate: Date) => {
+    const today = new Date();
+    return someDate.toDateString() === today.toDateString();
+  };
+
   // --- Fetch Workout Plans (with Exercises) ---
   useEffect(() => {
     async function fetchWorkoutPlans() {
@@ -224,7 +230,7 @@ export default function WorkoutTabs() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-6">
+    <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
       {(loadingPlans || loadingCount) ? (
         <div className="flex justify-center items-center h-64">
           <span className="loading loading-spinner loading-lg"></span>
@@ -234,7 +240,7 @@ export default function WorkoutTabs() {
           {/* --- Day Navigation Cards --- */}
           <div className="relative">
             <button
-              className="btn btn-circle absolute left-0 top-1/2 transform -translate-y-1/2 z-10 animate-bounce"
+              className="btn btn-circle btn-sm sm:btn-md absolute left-0 top-1/2 transform -translate-y-1/2 z-10 animate-bounce"
               onClick={scrollLeft}
               aria-label="Scroll left"
             >
@@ -242,7 +248,7 @@ export default function WorkoutTabs() {
             </button>
             <div
               ref={scrollContainerRef}
-              className="flex space-x-4 overflow-x-auto scrollbar-hide px-4 sm:px-0"
+              className="flex space-x-2 sm:space-x-4 overflow-x-auto scrollbar-hide px-8 sm:px-12"
             >
               {daysOfWeek.map((date, idx) => {
                 const dayName = weekdayNames[date.getDay()];
@@ -251,26 +257,36 @@ export default function WorkoutTabs() {
                   day: "numeric",
                 });
                 const isActive = selectedDate.toDateString() === date.toDateString();
+                const todayCheck = isToday(date);
                 return (
                   <div
                     key={idx}
                     onClick={() => setSelectedDate(date)}
-                    className={`card transition-all duration-300 transform hover:scale-110 ${
-                      isActive ? "bg-primary text-white shadow-2xl" : "bg-base-100 hover:bg-base-200"
-                    } w-28 sm:w-32 cursor-pointer`}
+                    className={`card transition-all duration-300 transform hover:scale-105 ${
+                      isActive 
+                        ? "bg-red-600 text-white shadow-xl" 
+                        : "bg-zinc-800 hover:bg-zinc-700 text-white"
+                    } w-24 sm:w-32 md:w-40 shrink-0 cursor-pointer ${
+                      todayCheck ? "ring-2 ring-red-500" : ""
+                    }`}
                   >
-                    <div className="card-body p-2 text-center">
-                      <h3 className="card-title text-base sm:text-lg font-extrabold">
+                    <div className="card-body p-3 text-center">
+                      <h3 className="card-title text-sm sm:text-base md:text-lg font-bold justify-center">
                         {dayName}
                       </h3>
-                      <p className="text-xs sm:text-sm font-mono">{formattedDate}</p>
+                      <p className="text-xs sm:text-sm font-mono">
+                        {formattedDate}
+                        {todayCheck && (
+                          <span className="block text-xs font-semibold text-red-300">Today</span>
+                        )}
+                      </p>
                     </div>
                   </div>
                 );
               })}
             </div>
             <button
-              className="btn btn-circle absolute right-0 top-1/2 transform -translate-y-1/2 z-10 animate-bounce"
+              className="btn btn-circle btn-sm sm:btn-md absolute right-0 top-1/2 transform -translate-y-1/2 z-10 animate-bounce"
               onClick={scrollRight}
               aria-label="Scroll right"
             >
@@ -279,7 +295,7 @@ export default function WorkoutTabs() {
           </div>
 
           {/* --- Workout Details Section --- */}
-          <div>
+          <div className="mt-4">
             {loadingLogs ? (
               <div className="flex justify-center items-center h-64">
                 <span className="loading loading-spinner loading-lg"></span>
@@ -313,32 +329,29 @@ export default function WorkoutTabs() {
             ) : (
               // Display the default or overridden workout plan.
               <div className="card bg-base-200 shadow-xl">
-                <div className="card-body">
-                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
-                    <h3 className="card-title text-2xl">
-                      {displayedWorkoutPlan.name} - {weekdayNames[selectedDate.getDay()]}
+                <div className="card-body p-3 sm:p-6">
+                  <div className="flex flex-col space-y-2 sm:space-y-0 sm:flex-row sm:justify-between sm:items-center">
+                    <h3 className="card-title text-xl sm:text-2xl break-words">
+                      {displayedWorkoutPlan?.name} - {weekdayNames[selectedDate.getDay()]}
                     </h3>
-                    <div className="mt-2 sm:mt-0 space-x-2">
+                    <div className="flex flex-wrap gap-2">
                       <button
-                        className="btn btn-sm btn-outline"
+                        className="btn btn-xs sm:btn-sm btn-outline"
                         onClick={openOverrideModal}
-                        aria-label="Change Workout"
                       >
-                        Change Workout
+                        Change
                       </button>
                       <button
-                        className="btn btn-sm btn-primary"
-                        onClick={() => openWorkoutDetails(displayedWorkoutPlan)}
-                        aria-label="View Workout Details"
+                        className="btn btn-xs sm:btn-sm btn-primary"
+                        onClick={() => openWorkoutDetails(displayedWorkoutPlan!)}
                       >
-                        View Details
+                        Details
                       </button>
                       <button
-                        className="btn btn-sm btn-success"
+                        className="btn btn-xs sm:btn-sm btn-success"
                         onClick={openWorkoutLogModal}
-                        aria-label="Log Workout"
                       >
-                        Log Workout
+                        Log
                       </button>
                     </div>
                   </div>
@@ -403,11 +416,11 @@ export default function WorkoutTabs() {
           {/* --- Detailed Workout Modal --- */}
           {isDetailModalOpen && selectedWorkout && (
             <div className="modal modal-open">
-              <div className="modal-box w-11/12 max-w-2xl">
+              <div className="modal-box w-[95%] max-w-2xl max-h-[90vh] overflow-y-auto">
                 <h3 className="font-bold text-2xl mb-4">{selectedWorkout.name}</h3>
                 <p className="mb-4">{selectedWorkout.description}</p>
-                <div className="overflow-x-auto">
-                  <table className="table w-full">
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <table className="table table-compact sm:table-normal w-full">
                     <thead>
                       <tr>
                         <th>Order</th>
@@ -444,15 +457,17 @@ export default function WorkoutTabs() {
           {/* --- Workout Logging Modal --- */}
           {isLogWorkoutModalOpen && displayedWorkoutPlan && (
             <div className="modal modal-open">
-              <div className="modal-box w-11/12 max-w-2xl">
+              <div className="modal-box w-[95%] max-w-2xl max-h-[90vh] overflow-y-auto p-3 sm:p-6">
                 <h3 className="font-bold text-2xl mb-4">Log Workout: {displayedWorkoutPlan.name}</h3>
                 <div className="space-y-4">
                   {displayedWorkoutPlan.workout_plan_exercises
                     .sort((a, b) => a.position - b.position)
                     .map((exercise, index) => (
                       <div key={exercise.id} className="border-b pb-4">
-                        <h4 className="font-semibold mb-2">{exercise.exercises.name}</h4>
-                        <div className="flex space-x-4 items-center">
+                        <h4 className="font-semibold mb-2 text-sm sm:text-base">
+                          {exercise.exercises.name}
+                        </h4>
+                        <div className="flex flex-wrap gap-4">
                           <div>
                             <label className="label">Sets</label>
                             <input
