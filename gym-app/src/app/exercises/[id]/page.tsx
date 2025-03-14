@@ -13,8 +13,8 @@ type Exercise = {
   id: string;
   name: string;
   description: string;
-  muscle_group: string;
-  equipment: string;
+  muscle_group: string | null;
+  equipment: string | null;
   default_sets: number;
   default_reps: number;
   image_url: string | null;
@@ -83,8 +83,8 @@ export default function ExerciseDetails() {
         .update({
           name,
           description,
-          muscle_group: standardMuscleGroup,
-          equipment: standardEquipment,
+          muscle_group: standardMuscleGroup || '',
+          equipment: standardEquipment || '',
           default_sets: defaultSets,
           default_reps: defaultReps,
         })
@@ -97,8 +97,8 @@ export default function ExerciseDetails() {
         ...exercise!,
         name,
         description,
-        muscle_group: standardMuscleGroup,
-        equipment: standardEquipment,
+        muscle_group: standardMuscleGroup || '',
+        equipment: standardEquipment || '',
         default_sets: defaultSets,
         default_reps: defaultReps,
       });
