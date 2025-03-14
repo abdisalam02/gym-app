@@ -13,10 +13,11 @@ type Exercise = {
 
 type ExerciseSelectorProps = {
   onSelectExercise: (exerciseId: string) => void;
+  initialOpen?: boolean;
 };
 
-export default function ExerciseSelector({ onSelectExercise }: ExerciseSelectorProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export default function ExerciseSelector({ onSelectExercise, initialOpen = true }: ExerciseSelectorProps) {
+  const [isOpen, setIsOpen] = useState(initialOpen);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [filteredExercises, setFilteredExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(false);
@@ -101,133 +102,115 @@ export default function ExerciseSelector({ onSelectExercise }: ExerciseSelectorP
   };
 
   return (
-    <>
-      <button
-        className="btn btn-sm bg-teal-600 hover:bg-teal-700 text-white"
-        onClick={() => setIsOpen(true)}
-      >
-        <FaPlus className="mr-2" /> Add Exercise
-      </button>
+    <div>
+      {!initialOpen && (
+        <button
+          className="btn btn-primary btn-sm"
+          onClick={() => setIsOpen(true)}
+        >
+          <FaPlus className="mr-1" /> Add Exercise
+        </button>
+      )}
 
       {isOpen && (
-        <div className="modal modal-open">
-          <div className="modal-box bg-slate-800 w-11/12 max-w-4xl">
-            <h3 className="font-bold text-lg text-white mb-4">Select Exercise</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text text-white">Search</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Search exercises..."
-                  className="input input-bordered bg-slate-700 text-white"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text text-white">Muscle Group</span>
-                </label>
-                <select
-                  className="select select-bordered bg-slate-700 text-white"
-                  value={muscleGroupFilter}
-                  onChange={(e) => setMuscleGroupFilter(e.target.value)}
-                >
-                  <option value="">All Muscle Groups</option>
-                  {uniqueMuscleGroups.map(group => (
-                    <option key={group} value={group}>{group}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text text-white">Equipment</span>
-                </label>
-                <select
-                  className="select select-bordered bg-slate-700 text-white"
-                  value={equipmentFilter}
-                  onChange={(e) => setEquipmentFilter(e.target.value)}
-                >
-                  <option value="">All Equipment</option>
-                  {uniqueEquipment.map(item => (
-                    <option key={item} value={item}>{item}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            
-            {loading ? (
-              <div className="flex justify-center items-center h-64">
-                <span className="loading loading-spinner loading-lg"></span>
-              </div>
-            ) : filteredExercises.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-slate-400">No exercises found matching your filters.</p>
-                <button
-                  className="btn bg-slate-700 hover:bg-slate-600 mt-4"
-                  onClick={() => {
-                    setSearchTerm('');
-                    setMuscleGroupFilter('');
-                    setEquipmentFilter('');
-                  }}
-                >
-                  Clear Filters
-                </button>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="table w-full">
-                  <thead>
-                    <tr>
-                      <th className="bg-slate-700">Name</th>
-                      <th className="bg-slate-700">Muscle Group</th>
-                      <th className="bg-slate-700">Equipment</th>
-                      <th className="bg-slate-700"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredExercises.map(exercise => (
-                      <tr key={exercise.id} className="hover:bg-slate-700">
-                        <td className="text-white">{exercise.name}</td>
-                        <td className="text-slate-400">{exercise.muscle_group || 'N/A'}</td>
-                        <td className="text-slate-400">{exercise.equipment || 'N/A'}</td>
-                        <td>
-                          <button
-                            className="btn btn-sm bg-teal-600 hover:bg-teal-700"
-                            onClick={() => handleSelectExercise(exercise.id)}
-                          >
-                            Select
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+        <div className={initialOpen ? "" : "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"}>
+          <div className={initialOpen ? "" : "bg-base-100 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-auto"}>
+            {!initialOpen && (
+              <div className="p-4 border-b border-base-300">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">Add Exercise</h3>
+                  <button 
+                    className="btn btn-sm btn-circle" 
+                    onClick={() => setIsOpen(false)}
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
             )}
             
-            <div className="modal-action">
-              <button
-                className="btn btn-outline"
-                onClick={() => {
-                  setIsOpen(false);
-                  setSearchTerm('');
-                  setMuscleGroupFilter('');
-                  setEquipmentFilter('');
-                }}
-              >
-                Close
-              </button>
+            <div className="p-4">
+              {/* Search and filter controls */}
+              <div className="mb-4 space-y-2">
+                <div className="relative">
+                  <input
+                    type="text"
+                    className="input input-bordered w-full pl-10"
+                    placeholder="Search exercises..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-base-content/50" />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <select
+                    className="select select-bordered w-full"
+                    value={muscleGroupFilter}
+                    onChange={(e) => setMuscleGroupFilter(e.target.value)}
+                  >
+                    <option value="">All Muscle Groups</option>
+                    {uniqueMuscleGroups.map((group) => (
+                      <option key={group} value={group}>{group}</option>
+                    ))}
+                  </select>
+                  
+                  <select
+                    className="select select-bordered w-full"
+                    value={equipmentFilter}
+                    onChange={(e) => setEquipmentFilter(e.target.value)}
+                  >
+                    <option value="">All Equipment</option>
+                    {uniqueEquipment.map((equip) => (
+                      <option key={equip} value={equip}>{equip}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              {/* Exercise list */}
+              {loading ? (
+                <div className="flex justify-center items-center py-8">
+                  <span className="loading loading-spinner loading-md"></span>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {filteredExercises.length === 0 ? (
+                    <div className="text-center py-8 text-base-content/70">
+                      {exercises.length === 0 ? 
+                        'No exercises found. Try adding some first.' : 
+                        'No exercises match your filters.'}
+                    </div>
+                  ) : (
+                    filteredExercises.map((exercise) => (
+                      <div 
+                        key={exercise.id} 
+                        className="card bg-base-200 hover:bg-base-300 cursor-pointer"
+                        onClick={() => handleSelectExercise(exercise.id)}
+                      >
+                        <div className="card-body p-4">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <h3 className="font-semibold">{exercise.name}</h3>
+                              <div className="text-sm text-base-content/70 mt-1">
+                                {exercise.muscle_group && <span className="mr-2">{exercise.muscle_group}</span>}
+                                {exercise.equipment && <span>• {exercise.equipment}</span>}
+                              </div>
+                            </div>
+                            <button className="btn btn-sm btn-circle btn-primary">
+                              <FaPlus />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
           </div>
-          <div className="modal-backdrop" onClick={() => setIsOpen(false)}></div>
         </div>
       )}
-    </>
+    </div>
   );
 } 

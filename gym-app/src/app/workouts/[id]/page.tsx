@@ -2,11 +2,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabaseClient';
-import { FaClipboardList, FaEdit, FaSave, FaTrash, FaArrowLeft, FaPlus, FaImage, FaSearch } from 'react-icons/fa';
+import { FaClipboardList, FaEdit, FaSave, FaTrash, FaArrowLeft, FaPlus, FaImage, FaSearch, FaTools } from 'react-icons/fa';
 import ImageSearch from '../../components/ImageSearch';
 import ExerciseSelector from '../../components/ExerciseSelector';
 import WorkoutTabs from '../../components/WorkoutTabs';
 import AutoImageFetch from '../../components/AutoImageFetch';
+import DatabaseChecker from '../../components/DatabaseChecker';
 
 type Exercise = {
   id: string;
@@ -48,61 +49,106 @@ export default function WorkoutDetails() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
 
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [workoutLogs, setWorkoutLogs] = useState<any[]>([]);
+  const [showExerciseSelector, setShowExerciseSelector] = useState(false);
+  const [showAutoImageFetch, setShowAutoImageFetch] = useState(false);
+
   useEffect(() => {
-    async function fetchWorkoutAndExercises() {
+    // Fetch workout data
+    const fetchWorkoutData = async () => {
       setLoading(true);
-      
-      // Fetch workout data
-      const { data: workoutData, error: workoutError } = await supabase
-        .from('workout_plans')
-        .select('*')
-        .eq('id', workoutId)
-        .single();
-      
-      if (workoutError) {
-        console.error('Error fetching workout:', workoutError);
-      } else if (workoutData) {
+      try {
+        // Fetch workout details
+        const { data: workoutData, error: workoutError } = await supabase
+          .from('workout_plans')
+          .select('*')
+          .eq('id', workoutId)
+          .single();
+
+        if (workoutError) {
+          console.error('Error fetching workout details:', workoutError);
+          setFetchError(`Error fetching workout: ${workoutError.message || 'Unknown error'}`);
+          setLoading(false);
+          return;
+        }
+
+        if (!workoutData) {
+          setFetchError('Workout not found');
+          setLoading(false);
+          return;
+        }
+
+        // Set workout data
         setWorkout(workoutData);
-        // Initialize form state
         setName(workoutData.name);
         setDescription(workoutData.description || '');
+
+        // Fetch workout exercises with exercise details
+        const { data: exercisesData, error: exercisesError } = await supabase
+          .from('workout_plan_exercises')
+          .select(`
+            id,
+            position,
+            workout_plan_id,
+            exercise_id,
+            sets,
+            reps,
+            exercises (id, name)
+          `)
+          .eq('workout_plan_id', workoutId)
+          .order('position');
+
+        if (exercisesError) {
+          console.error('Error fetching workout exercises:', exercisesError);
+          setFetchError(`Error fetching exercises: ${exercisesError.message || 'Unknown error'}`);
+          setExercises([]); // Set empty array to avoid null errors
+        } else if (!exercisesData || exercisesData.length === 0) {
+          console.log('No exercises found for this workout');
+          setExercises([]);
+        } else {
+          // Transform the data
+          const transformedExercises = exercisesData.map(exerciseData => ({
+            id: exerciseData.id,
+            position: exerciseData.position,
+            workout_plan_id: exerciseData.workout_plan_id,
+            exercise_id: exerciseData.exercise_id,
+            sets: exerciseData.sets,
+            reps: exerciseData.reps,
+            exercise: exerciseData.exercises
+          }));
+          setExercises(transformedExercises);
+        }
+
+        // Fetch workout logs
+        const { data: logsData, error: logsError } = await supabase
+          .from('workout_logs')
+          .select('*')
+          .eq('workout_plan_id', workoutId)
+          .order('created_at', { ascending: false });
+
+        if (logsError) {
+          console.error('Error fetching workout logs:', logsError);
+          setFetchError(`Error fetching workout logs: ${logsError.message || 'Unknown error'}`);
+          setWorkoutLogs([]);
+        } else {
+          setWorkoutLogs(logsData || []);
+        }
+
+      } catch (error) {
+        console.error('Unexpected error:', error);
+        setFetchError('An unexpected error occurred. Please try again later.');
+      } finally {
+        setLoading(false);
       }
-      
-      // Fetch workout exercises with exercise details
-      const { data: exercisesData, error: exercisesError } = await supabase
-        .from('workout_plan_exercises')
-        .select(`
-          id,
-          position,
-          workout_plan_id,
-          exercise_id,
-          sets,
-          reps,
-          exercises (id, name)
-        `)
-        .eq('workout_plan_id', workoutId)
-        .order('position');
-      
-      if (exercisesError) {
-        console.error('Error fetching workout exercises:', exercisesError);
-      } else if (exercisesData) {
-        // Transform the data to match the WorkoutExercise type
-        const transformedExercises = exercisesData.map((item) => ({
-          id: item.id,
-          workout_id: item.workout_plan_id,
-          exercise_id: item.exercise_id,
-          order: item.position,
-          sets: item.sets || 3,
-          reps: item.reps || 10,
-          exercise: item.exercises
-        }));
-        setExercises(transformedExercises);
-      }
-      
-      setLoading(false);
+    };
+
+    if (workoutId) {
+      fetchWorkoutData();
     }
-    
-    fetchWorkoutAndExercises();
   }, [workoutId]);
 
   const handleSave = async () => {
@@ -351,6 +397,73 @@ export default function WorkoutDetails() {
     }
   };
 
+  // Add handleMoveExercise function
+  const handleMoveExercise = (index: number, direction: 'up' | 'down') => {
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= exercises.length) return;
+    
+    const exercise = exercises[index];
+    
+    // Update positions in the UI
+    const updatedExercises = [...exercises];
+    updatedExercises.splice(index, 1);
+    updatedExercises.splice(newIndex, 0, exercise);
+    
+    // Update position values to match new order
+    const reorderedExercises = updatedExercises.map((ex, idx) => ({
+      ...ex,
+      order: idx + 1
+    }));
+    
+    setExercises(reorderedExercises);
+    
+    // Update in database - can be optimized to only update the affected exercises
+    reorderedExercises.forEach(ex => {
+      supabase
+        .from('workout_plan_exercises')
+        .update({ position: ex.order })
+        .eq('id', ex.id)
+        .then(({ error }) => {
+          if (error) {
+            console.error('Error updating exercise position:', error);
+          }
+        });
+    });
+  };
+
+  // Add handleSaveChanges function
+  const handleSaveChanges = async () => {
+    if (!workout) return;
+    
+    try {
+      const { error } = await supabase
+        .from('workout_plans')
+        .update({
+          name,
+          description
+        })
+        .eq('id', workoutId);
+
+      if (error) {
+        console.error('Error updating workout:', error);
+        alert('Failed to update workout details');
+        return;
+      }
+
+      // Update the workout in state
+      setWorkout({
+        ...workout,
+        name,
+        description
+      });
+
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error in handleSaveChanges:', error);
+      alert('An error occurred while saving changes');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -363,18 +476,43 @@ export default function WorkoutDetails() {
     return (
       <div className="text-center py-12">
         <p className="text-base-content/70">Workout not found</p>
+        <button
+          onClick={() => setShowDiagnostics(true)}
+          className="btn btn-sm bg-base-300 hover:bg-base-200 mt-4"
+        >
+          <FaTools className="mr-2" /> Run Diagnostics
+        </button>
+        {showDiagnostics && <DatabaseChecker />}
       </div>
     );
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <button 
-        className="btn btn-sm bg-base-300 hover:bg-base-200 mb-4"
-        onClick={() => router.back()}
-      >
-        <FaArrowLeft className="mr-2" /> Back
-      </button>
+      <div className="flex justify-between items-center mb-4">
+        <button 
+          className="btn btn-sm bg-base-300 hover:bg-base-200"
+          onClick={() => router.back()}
+        >
+          <FaArrowLeft className="mr-2" /> Back
+        </button>
+        
+        <button
+          onClick={() => setShowDiagnostics(!showDiagnostics)}
+          className="btn btn-sm bg-base-300 hover:bg-base-200"
+        >
+          <FaTools className="mr-2" /> {showDiagnostics ? 'Hide' : 'Show'} Diagnostics
+        </button>
+      </div>
+      
+      {fetchError && (
+        <div className="alert alert-warning mb-4">
+          <p className="font-medium">There was a problem loading some data:</p>
+          <p>{fetchError}</p>
+        </div>
+      )}
+      
+      {showDiagnostics && <DatabaseChecker />}
       
       <div className="tabs tabs-boxed bg-base-300 mb-6">
         <a 
@@ -502,65 +640,115 @@ export default function WorkoutDetails() {
                     
                     <p className="text-base-content/70 mb-6">{workout.description || 'No description available'}</p>
                     
-                    <div className="card bg-base-300 p-4 rounded-lg mb-6">
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold">Exercises</h3>
-                        <ExerciseSelector onSelectExercise={addExerciseToWorkout} />
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-xl font-bold">Exercises</h3>
+                      <div className="flex gap-2">
+                        <button
+                          className="btn btn-sm btn-primary"
+                          onClick={() => setShowExerciseSelector(true)}
+                        >
+                          <FaPlus className="mr-1" /> Add Exercise
+                        </button>
+                        {exercises.length > 0 && (
+                          <button
+                            className="btn btn-sm btn-primary"
+                            onClick={() => setShowAutoImageFetch(true)}
+                          >
+                            <FaImage className="mr-1" /> Fetch Missing Images
+                          </button>
+                        )}
                       </div>
-                      
-                      {exercises.length === 0 ? (
-                        <div className="text-center py-6 text-base-content/70">
-                          <p>No exercises added to this workout yet.</p>
-                          <p>Click the "Add Exercise" button to get started.</p>
+                    </div>
+
+                    {exercises.length === 0 ? (
+                      <div className="card bg-base-200 shadow-lg mb-6 p-8 text-center">
+                        <p className="text-base-content/70 mb-4">No exercises added to this workout yet.</p>
+                        <p className="mb-4">
+                          Click the "Add Exercise" button above to start building your workout, or run diagnostics if you believe there's an issue.
+                        </p>
+                        <div className="flex justify-center">
+                          <button 
+                            className="btn btn-primary"
+                            onClick={() => setShowExerciseSelector(true)}
+                          >
+                            <FaPlus className="mr-2" /> Add Your First Exercise
+                          </button>
                         </div>
-                      ) : (
-                        <ul className="space-y-2">
-                          {exercises.map((ex, index) => (
-                            <li key={ex.id} className="bg-base-200 p-3 rounded-lg">
-                              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {exercises.map((exercise, index) => (
+                          <div key={exercise.id} className="card bg-base-200 shadow-lg">
+                            <div className="card-body p-4">
+                              <div className="flex justify-between items-center">
                                 <div className="flex items-center">
-                                  <span className="bg-primary text-primary-content w-6 h-6 rounded-full flex items-center justify-center mr-3">
-                                    {index + 1}
+                                  <span className="text-lg font-semibold mr-2">
+                                    {index + 1}.
                                   </span>
-                                  <span className="font-medium">{ex.exercise?.name}</span>
+                                  <h3 className="text-lg font-semibold">
+                                    {exercise.exercise?.name || 'Unknown Exercise'}
+                                  </h3>
                                 </div>
-                                
-                                <div className="flex items-center mt-2 sm:mt-0">
-                                  <div className="flex items-center mr-4">
-                                    <span className="text-base-content/70 text-sm mr-2">Sets:</span>
-                                    <input
-                                      type="number"
-                                      className="input input-sm input-bordered bg-base-300 w-16"
-                                      value={ex.sets}
-                                      onChange={(e) => updateExerciseSetsReps(ex.id, parseInt(e.target.value), ex.reps)}
-                                      min="1"
-                                    />
-                                  </div>
-                                  
-                                  <div className="flex items-center mr-4">
-                                    <span className="text-base-content/70 text-sm mr-2">Reps:</span>
-                                    <input
-                                      type="number"
-                                      className="input input-sm input-bordered bg-base-300 w-16"
-                                      value={ex.reps}
-                                      onChange={(e) => updateExerciseSetsReps(ex.id, ex.sets, parseInt(e.target.value))}
-                                      min="1"
-                                    />
-                                  </div>
-                                  
+                                <div className="flex gap-2">
                                   <button
-                                    className="btn btn-sm btn-circle bg-error hover:bg-error/80 border-none text-error-content"
-                                    onClick={() => removeExerciseFromWorkout(ex.id)}
+                                    className="btn btn-sm bg-base-300"
+                                    onClick={() => handleMoveExercise(index, 'up')}
+                                    disabled={index === 0}
+                                  >
+                                    ↑
+                                  </button>
+                                  <button
+                                    className="btn btn-sm bg-base-300"
+                                    onClick={() => handleMoveExercise(index, 'down')}
+                                    disabled={index === exercises.length - 1}
+                                  >
+                                    ↓
+                                  </button>
+                                  <button
+                                    className="btn btn-sm btn-error"
+                                    onClick={() => removeExerciseFromWorkout(exercise.id)}
                                   >
                                     <FaTrash />
                                   </button>
                                 </div>
                               </div>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
+                              <div className="flex flex-wrap gap-4 mt-2">
+                                <div className="flex items-center">
+                                  <span className="mr-2">Sets:</span>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    max="20"
+                                    value={exercise.sets || 3}
+                                    onChange={(e) => updateExerciseSetsReps(
+                                      exercise.id,
+                                      parseInt(e.target.value) || 1,
+                                      exercise.reps
+                                    )}
+                                    className="input input-bordered input-sm w-16"
+                                  />
+                                </div>
+                                <div className="flex items-center">
+                                  <span className="mr-2">Reps:</span>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    max="100"
+                                    value={exercise.reps || 10}
+                                    onChange={(e) => updateExerciseSetsReps(
+                                      exercise.id,
+                                      exercise.sets,
+                                      parseInt(e.target.value) || 1
+                                    )}
+                                    className="input input-bordered input-sm w-16"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </>
                 )}
               </div>
@@ -569,6 +757,58 @@ export default function WorkoutDetails() {
         </div>
       ) : (
         <WorkoutTabs workoutId={workoutId} workoutPlan={workout} exercises={exercises} />
+      )}
+
+      {/* Exercise Selector Modal */}
+      {showExerciseSelector && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-base-100 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-auto">
+            <div className="p-4 border-b border-base-300">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Add Exercise</h3>
+                <button 
+                  className="btn btn-sm btn-circle" 
+                  onClick={() => setShowExerciseSelector(false)}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+            <div className="p-4">
+              <ExerciseSelector 
+                onSelectExercise={(exerciseId) => {
+                  addExerciseToWorkout(exerciseId);
+                  setShowExerciseSelector(false);
+                }} 
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Auto Image Fetch Modal */}
+      {showAutoImageFetch && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-base-100 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-auto">
+            <div className="p-4 border-b border-base-300">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Fetch Missing Images</h3>
+                <button 
+                  className="btn btn-sm btn-circle" 
+                  onClick={() => setShowAutoImageFetch(false)}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+            <div className="p-4">
+              <AutoImageFetch 
+                exercises={exercises.map(e => e.exercise_id)} 
+                onComplete={() => setShowAutoImageFetch(false)}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
