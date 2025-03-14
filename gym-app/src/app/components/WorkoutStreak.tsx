@@ -3,11 +3,13 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { FaFire, FaTrophy, FaMedal, FaBed } from 'react-icons/fa';
 
-type WorkoutLog = {
-  id: string;
-  workout_date: string;
-  is_rest_day?: boolean;
-};
+// Note: This type is used in the TypeScript interface but not directly in the component
+// Keeping it for type safety and future reference
+// type WorkoutLog = {
+//   id: string;
+//   workout_date: string;
+//   is_rest_day?: boolean;
+// };
 
 export default function WorkoutStreak() {
   const [currentStreak, setCurrentStreak] = useState(0);
@@ -51,7 +53,7 @@ export default function WorkoutStreak() {
       today.setHours(0, 0, 0, 0);
       
       let streak = 0;
-      let checkDate = new Date(today);
+      const checkDate = new Date(today);
       
       // Check if worked out today
       const workedOutToday = uniqueDates.includes(checkDate.toISOString().split('T')[0]);
