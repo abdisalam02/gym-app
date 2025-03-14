@@ -1,94 +1,106 @@
 // components/WorkoutSchedule.tsx
-import React from "react";
+"use client";
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabaseClient';
+import { FaCalendarAlt } from 'react-icons/fa';
 
-type WorkoutDay = {
-  type: string;
-  exercises: string[];
-};
-
-// Define your three workout days
-const workoutPlan: WorkoutDay[] = [
-  {
-    type: "Chest & Shoulders",
-    exercises: [
-      "Bench Press",
-      "Lateral Raises",
-      "Dumbbell Fly",
-      "Incline Bench Press",
-      "Shoulder Press",
-      "Face Pulls",
-    ],
-  },
-  {
-    type: "Back & Biceps",
-    exercises: [
-      "Barbell Row",
-      "Lat Pulldowns",
-      "Seated Cable Row",
-      "Incline Curls",
-      "Hammer Curls",
-    ],
-  },
-  {
-    type: "Legs & Triceps",
-    exercises: [
-      "Squats",
-      "Leg Extension",
-      "Leg Curl",
-    ],
-  },
-];
-
-// Function to determine today’s workout based on a 4-day cycle:
-// Day 0: Workout 1, Day 1: Workout 2, Day 2: Workout 3, Day 3: Rest Day.
-const getWorkoutForToday = (): { workoutDay: WorkoutDay | null; cycleDay: number } => {
-  // Set a fixed start date (adjust this as your "first" workout day)
-  const startDate = new Date("2023-01-01");
-  const today = new Date();
-  const diffTime = today.getTime() - startDate.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 3600 * 24));
-  const cycleDay = diffDays % 4; // 0, 1, 2 for workouts; 3 for rest
-
-  if (cycleDay === 3) {
-    return { workoutDay: null, cycleDay };
-  } else {
-    return { workoutDay: workoutPlan[cycleDay], cycleDay };
-  }
+type ScheduledWorkout = {
+  id: string;
+  workout_plan_id: string;
+  scheduled_date: string;
+  workout_plans: {
+    name: string;
+  };
 };
 
 export default function WorkoutSchedule() {
-  const { workoutDay, cycleDay } = getWorkoutForToday();
-  const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const today = new Date();
-  const weekday = weekdayNames[today.getDay()];
+  const [scheduledWorkouts, setScheduledWorkouts] = useState<ScheduledWorkout[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchScheduledWorkouts() {
+      setLoading(true);
+      
+      // Get today's date at midnight
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Get date 7 days from now
+      const nextWeek = new Date(today);
+      nextWeek.setDate(nextWeek.getDate() + 7);
+      
+      const { data, error } = await supabase
+        .from('scheduled_workouts')
+        .select(`
+          *,
+          workout_plans (
+            name
+          )
+        `)
+        .gte('scheduled_date', today.toISOString())
+        .lt('scheduled_date', nextWeek.toISOString())
+        .order('scheduled_date', { ascending: true });
+      
+      if (error) {
+        console.error('Error fetching scheduled workouts:', error);
+      } else {
+        setScheduledWorkouts(data || []);
+      }
+      
+      setLoading(false);
+    }
+    
+    fetchScheduledWorkouts();
+  }, []);
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'short', 
+      month: 'short', 
+      day: 'numeric'
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-32">
+        <span className="loading loading-spinner loading-md"></span>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-3xl font-bold">
-        {weekday} - {cycleDay === 3 ? "Rest Day" : workoutDay?.type}
-      </h2>
-      {cycleDay === 3 ? (
-        <div className="alert alert-info">
-          <div>
-            <span>Enjoy your rest day! Recovery is as important as training.</span>
+    <div className="card bg-slate-800 shadow-xl">
+      <div className="card-body p-4">
+        <h2 className="card-title text-white">
+          <FaCalendarAlt className="mr-2 text-slate-400" /> Upcoming Workouts
+        </h2>
+        
+        {scheduledWorkouts.length === 0 ? (
+          <p className="text-slate-400 text-center py-4">No workouts scheduled for the next 7 days</p>
+        ) : (
+          <div className="space-y-2 mt-2">
+            {scheduledWorkouts.map((workout) => (
+              <div key={workout.id} className="flex items-center p-2 bg-slate-700 rounded-lg">
+                <div className="bg-slate-600 rounded-md p-2 mr-3 text-center min-w-[50px]">
+                  <div className="text-xs text-slate-300">
+                    {new Date(workout.scheduled_date).toLocaleDateString('en-US', { weekday: 'short' })}
+                  </div>
+                  <div className="text-lg font-bold text-white">
+                    {new Date(workout.scheduled_date).getDate()}
+                  </div>
+                </div>
+                <div>
+                  <div className="font-medium text-white">{workout.workout_plans.name}</div>
+                  <div className="text-xs text-slate-400">{formatDate(workout.scheduled_date)}</div>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
-      ) : (
-        <div className="card bg-base-100 shadow-xl">
-          <div className="card-body">
-            <h3 className="card-title text-2xl mb-4">
-              {workoutDay?.type} Workout
-            </h3>
-            <ul className="list-disc pl-6">
-              {workoutDay?.exercises.map((exercise, index) => (
-                <li key={index} className="text-lg">
-                  {exercise}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

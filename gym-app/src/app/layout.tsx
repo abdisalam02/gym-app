@@ -2,35 +2,52 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "./components/Navbar";
+import PWAInitializer from './components/PWAInitializer';
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "My Gym App",
-  description: "Personal workout tracker",
+  title: "GymTrack Pro",
+  description: "Track your workouts, progress, and fitness goals with ease",
+  manifest: "/manifest.json",
+  themeColor: "#38bdf8",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "GymTrack",
+  },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+    "application-name": "GymTrack",
+    "apple-mobile-web-app-title": "GymTrack",
+    "msapplication-TileColor": "#38bdf8",
+  },
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en" data-theme="dark">
-      <body className={`${inter.className} bg-zinc-950`}>
-        <div className="min-h-screen flex flex-col">
-          <Navbar />
-          
-          <main className="flex-grow container mx-auto py-4 sm:py-8 px-4 sm:px-6">
-            {children}
-          </main>
-          
-          <footer className="bg-zinc-900 text-zinc-400 py-4">
-            <div className="container mx-auto px-4 text-center text-sm">
-              <p>Personal Workout Tracker - Built with Next.js</p>
-            </div>
-          </footer>
-        </div>
+    <html lang="en" suppressHydrationWarning data-theme="dark">
+      <head>
+        {/* PWA meta tags */}
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+      </head>
+      <body className={`min-h-screen transition-colors duration-300 ${inter.className}`}>
+        <Navbar />
+        <main className="container mx-auto py-8 px-4">
+          {children}
+        </main>
+        <PWAInitializer />
       </body>
     </html>
   );

@@ -1,36 +1,117 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MyGym - Fitness Tracking Application
 
-## Getting Started
+A modern, responsive web application for tracking workouts, exercises, body measurements, and fitness progress.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### Dashboard
+- Overview of recent workouts and progress
+- Workout streak tracking
+- Personal records display
+- Body stats visualization
+- Upcoming workout schedule
+
+### Workouts
+- Create and manage workout plans
+- Track workout history
+- Log completed workouts
+- Plan future workouts with the workout planner
+- Add images to workout plans using Google image search
+
+### Exercises
+- Browse and search exercise library
+- Filter exercises by muscle group
+- Create custom exercises
+- Add images to exercises using Google image search
+- Track exercise history and progress
+
+### Measurements
+- Log and track body measurements
+- Visualize progress with charts
+- Set measurement goals
+
+## Technical Stack
+
+- **Frontend**: Next.js 13.4+ (App Router), React, TypeScript
+- **Styling**: Tailwind CSS, DaisyUI
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth
+- **Image Search**: Google Custom Search API
+- **Charts**: Chart.js with React-Chartjs-2
+
+## Setup Instructions
+
+### Prerequisites
+- Node.js 16.8 or later
+- npm or yarn
+- Supabase account
+- Google Custom Search API key
+
+### Environment Variables
+
+Create a `.env.local` file in the root directory with the following variables:
+
+```
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# Google Custom Search API
+NEXT_PUBLIC_GOOGLE_SEARCH_API_KEY=your_google_api_key
+NEXT_PUBLIC_GOOGLE_SEARCH_ENGINE_ID=your_search_engine_id
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Google Custom Search API Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Create a Google Cloud project at [console.cloud.google.com](https://console.cloud.google.com/)
+2. Enable the Custom Search API
+3. Create API credentials (API Key)
+4. Create a Programmable Search Engine at [programmablesearchengine.google.com](https://programmablesearchengine.google.com/)
+5. Configure your search engine to search the entire web
+6. Enable image search in your search engine settings
+7. Copy your Search Engine ID and API Key to your environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Installation
 
-## Learn More
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/gym-app.git
+cd gym-app
 
-To learn more about Next.js, take a look at the following resources:
+# Install dependencies
+npm install
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Run the development server
+npm run dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Database Schema
 
-## Deploy on Vercel
+The application uses the following main tables in Supabase:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **workout_plans**: Stores workout plan details
+- **workout_days**: Stores individual workout days within a plan
+- **exercises**: Stores exercise information
+- **workout_exercises**: Links exercises to workout days with sets/reps
+- **workout_logs**: Records completed workouts
+- **exercise_logs**: Records completed exercises within workouts
+- **measurements**: Stores body measurement data
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Mobile Responsiveness
+
+The application is fully responsive and optimized for:
+- Desktop screens
+- Tablets
+- Mobile devices
+
+## Color Scheme
+
+The application uses a calming color scheme:
+- Slate colors (slate-600, slate-700, slate-800) for backgrounds
+- Teal (teal-600, teal-700) for primary buttons and accents
+- Amber for highlights and streaks
+- White for headings and slate-300/400 for secondary text
+
+## License
+
+MIT License
