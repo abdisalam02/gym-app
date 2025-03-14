@@ -109,15 +109,15 @@ export default function Dashboard() {
           <div className="stat-figure text-primary">
             <FaDumbbell size={24} />
           </div>
-          <div className="stat-title text-base-content/70">Total Workouts</div>
+          <div className="stat-title text-base-content/70 text-sm sm:text-base">Total Workouts</div>
           {loading ? (
             <div className="stat-value text-base-content h-8 flex items-center">
               <span className="loading loading-spinner loading-sm"></span>
             </div>
           ) : (
             <>
-              <div className="stat-value text-base-content">{totalWorkouts}</div>
-              <div className="stat-desc text-base-content/60">This month</div>
+              <div className="stat-value text-base-content text-2xl sm:text-3xl">{totalWorkouts}</div>
+              <div className="stat-desc text-base-content/60 text-xs sm:text-sm">This month</div>
             </>
           )}
         </div>
@@ -126,17 +126,17 @@ export default function Dashboard() {
           <div className="stat-figure text-secondary">
             <FaChartLine size={24} />
           </div>
-          <div className="stat-title text-base-content/70">Progress</div>
+          <div className="stat-title text-base-content/70 text-sm sm:text-base">Progress</div>
           {loading ? (
             <div className="stat-value text-base-content h-8 flex items-center">
               <span className="loading loading-spinner loading-sm"></span>
             </div>
           ) : (
             <>
-              <div className="stat-value text-base-content">
+              <div className="stat-value text-base-content text-2xl sm:text-3xl">
                 {progressPercentage > 0 ? `+${progressPercentage}%` : `${progressPercentage}%`}
               </div>
-              <div className="stat-desc text-base-content/60">vs last month</div>
+              <div className="stat-desc text-base-content/60 text-xs sm:text-sm">vs last month</div>
             </>
           )}
         </div>
@@ -145,15 +145,15 @@ export default function Dashboard() {
           <div className="stat-figure text-accent">
             <FaCalendar size={24} />
           </div>
-          <div className="stat-title text-base-content/70">Streak</div>
+          <div className="stat-title text-base-content/70 text-sm sm:text-base">Streak</div>
           {loading ? (
             <div className="stat-value text-base-content h-8 flex items-center">
               <span className="loading loading-spinner loading-sm"></span>
             </div>
           ) : (
             <>
-              <div className="stat-value text-base-content">{currentStreak} days</div>
-              <div className="stat-desc text-base-content/60">Current streak</div>
+              <div className="stat-value text-base-content text-2xl sm:text-3xl">{currentStreak} days</div>
+              <div className="stat-desc text-base-content/60 text-xs sm:text-sm">Current streak</div>
             </>
           )}
         </div>
@@ -176,19 +176,19 @@ export default function Dashboard() {
       {/* Tab Navigation */}
       <div className="tabs tabs-boxed bg-base-300 p-1">
         <button 
-          className={`tab tab-lg flex-1 ${activeTab === 'workout' ? 'bg-primary text-primary-content' : 'text-base-content/70'}`}
+          className={`tab sm:tab-lg flex-1 text-xs sm:text-base ${activeTab === 'workout' ? 'bg-primary text-primary-content' : 'text-base-content/70'}`}
           onClick={() => setActiveTab('workout')}
         >
           Workout Plan
         </button>
         <button 
-          className={`tab tab-lg flex-1 ${activeTab === 'stats' ? 'bg-primary text-primary-content' : 'text-base-content/70'}`}
+          className={`tab sm:tab-lg flex-1 text-xs sm:text-base ${activeTab === 'stats' ? 'bg-primary text-primary-content' : 'text-base-content/70'}`}
           onClick={() => setActiveTab('stats')}
         >
           Body Stats
         </button>
         <button 
-          className={`tab tab-lg flex-1 ${activeTab === 'records' ? 'bg-primary text-primary-content' : 'text-base-content/70'}`}
+          className={`tab sm:tab-lg flex-1 text-xs sm:text-base ${activeTab === 'records' ? 'bg-primary text-primary-content' : 'text-base-content/70'}`}
           onClick={() => setActiveTab('records')}
         >
           Personal Records

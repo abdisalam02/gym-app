@@ -163,7 +163,7 @@ export default function WorkoutStreak() {
               <span className="text-sm text-base-content/70">Last 7 days</span>
             </div>
             
-            <div className="flex justify-between">
+            <div className="flex justify-between px-1">
               {/* Display days from left (oldest) to right (today) */}
               {Array.from({ length: 7 }).map((_, i) => {
                 // Calculate the date for this position
@@ -178,14 +178,14 @@ export default function WorkoutStreak() {
                   <div key={i} className="flex flex-col items-center">
                     <div 
                       className={`
-                        w-10 h-10 rounded-full flex items-center justify-center
+                        w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center
                         ${isRestDay ? 'bg-blue-500' : hasWorkout ? 'bg-primary' : 'bg-base-200'}
                         ${isToday ? 'ring-2 ring-offset-2 ring-accent ring-offset-base-100 scale-110' : ''}
                         transition-all duration-200
                       `}
                     >
-                      {hasWorkout && !isRestDay && <FaFire className="text-primary-content" size={14} />}
-                      {isRestDay && <FaBed className="text-white" size={14} />}
+                      {hasWorkout && !isRestDay && <FaFire className="text-primary-content" size={isToday ? 14 : 12} />}
+                      {isRestDay && <FaBed className="text-white" size={isToday ? 14 : 12} />}
                     </div>
                     <span className={`text-xs mt-1 ${isToday ? 'font-bold text-accent' : 'text-base-content/70'}`}>
                       {isToday ? 'Today' : i === 5 ? 'Yest' : date.toLocaleDateString(undefined, { weekday: 'short' }).slice(0, 2)}

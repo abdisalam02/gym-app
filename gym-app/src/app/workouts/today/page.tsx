@@ -323,39 +323,37 @@ export default function TodaysWorkout() {
   
   // Render the page
   return (
-    <div className="container mx-auto px-4 py-6 space-y-6">
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6 space-y-6">
+      {/* Page Header */}
+      <div className="flex justify-between items-center">
         <div className="flex items-center">
-          <Link 
-            href="/workouts" 
-            className="btn btn-circle btn-sm md:btn-md btn-ghost mr-3"
-          >
+          <Link href="/dashboard" className="btn btn-sm btn-circle bg-base-300 hover:bg-base-200 mr-2">
             <FaArrowLeft />
           </Link>
-          <h1 className="text-xl md:text-2xl font-bold text-base-content">
-            {selectedWorkout ? selectedWorkout.name : "Today's Workout"}
-          </h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Today's Workout</h1>
         </div>
         
-        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+        <div className="flex gap-2">
           <button
-            className="btn btn-sm md:btn-md bg-base-300 hover:bg-base-200 flex-1 sm:flex-none"
+            className="btn btn-sm bg-base-300 hover:bg-base-200 whitespace-nowrap"
             onClick={() => setShowWorkoutSelector(true)}
           >
-            <FaExchangeAlt className="mr-2" /> Change Workout
+            <FaExchangeAlt className="mr-1 sm:mr-2" /> 
+            <span className="hidden xs:inline">Change</span>
           </button>
-          <button
-            className="btn btn-sm md:btn-md btn-primary flex-1 sm:flex-none"
+          
+          <button 
+            className="btn btn-sm bg-primary hover:bg-primary-focus text-primary-content whitespace-nowrap"
             onClick={saveWorkoutLog}
             disabled={saveLoading || !selectedWorkout}
           >
             {saveLoading ? (
               <span className="loading loading-spinner loading-sm"></span>
             ) : (
-              <FaSave className="mr-2" />
+              <FaSave className="mr-1 sm:mr-2" />
             )}
-            {todaysWorkoutLogged ? 'Update Log' : 'Save Workout'}
+            <span className="hidden xs:inline">{todaysWorkoutLogged ? 'Update' : 'Save'}</span>
+            <span className="xs:hidden">{todaysWorkoutLogged ? '✓' : '💾'}</span>
           </button>
         </div>
       </div>
@@ -411,7 +409,7 @@ export default function TodaysWorkout() {
           <div className="space-y-6">
             {selectedWorkout.workout_plan_exercises.map((exercise, exerciseIndex) => (
               <div key={exercise.id} className="card bg-base-200 shadow-lg">
-                <div className="card-body p-4 sm:p-6">
+                <div className="card-body p-3 sm:p-6">
                   <div className="flex flex-col md:flex-row gap-4">
                     {exercise.exercises.image_url && (
                       <div className="w-full md:w-32 h-32 rounded-lg overflow-hidden">
@@ -428,7 +426,74 @@ export default function TodaysWorkout() {
                         {exercise.exercises.name}
                       </h3>
                       
-                      <div className="overflow-x-auto">
+                      {/* Mobile version (visible on small screens) */}
+                      <div className="md:hidden space-y-4">
+                        {exerciseLogs[exerciseIndex]?.sets.map((_, setIndex) => (
+                          <div key={setIndex} className="bg-base-300 p-3 rounded-lg">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="font-medium">Set {setIndex + 1}</span>
+                              <div className="flex items-center">
+                                <input
+                                  type="checkbox"
+                                  className="checkbox checkbox-sm checkbox-success"
+                                  checked={exerciseLogs[exerciseIndex]?.completed[setIndex] || false}
+                                  onChange={(e) => toggleSetCompletion(exerciseIndex, setIndex)}
+                                />
+                                <button 
+                                  className="btn btn-xs btn-circle ml-2"
+                                  onClick={() => removeSet(exerciseIndex, setIndex)}
+                                >
+                                  <FaMinus size={10} />
+                                </button>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="text-xs text-base-content/70">Weight (kg)</label>
+                                <input
+                                  type="number"
+                                  className="input input-bordered input-sm w-full bg-base-200"
+                                  value={exerciseLogs[exerciseIndex]?.weight[setIndex] || 0}
+                                  onChange={(e) => updateExerciseLog(
+                                    exerciseIndex,
+                                    'weight',
+                                    Number(e.target.value),
+                                    setIndex
+                                  )}
+                                  min="0"
+                                  step="1.25"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs text-base-content/70">Reps</label>
+                                <input
+                                  type="number"
+                                  className="input input-bordered input-sm w-full bg-base-200"
+                                  value={exerciseLogs[exerciseIndex]?.reps[setIndex] || 0}
+                                  onChange={(e) => updateExerciseLog(
+                                    exerciseIndex,
+                                    'reps',
+                                    Number(e.target.value),
+                                    setIndex
+                                  )}
+                                  min="0"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        <div className="flex justify-center">
+                          <button 
+                            className="btn btn-sm bg-base-300 hover:bg-base-200 mt-2"
+                            onClick={() => addSet(exerciseIndex)}
+                          >
+                            <FaPlus className="mr-1" /> Add Set
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* Desktop version (hidden on small screens) */}
+                      <div className="hidden md:block overflow-x-auto">
                         <table className="table w-full">
                           <thead>
                             <tr className="bg-base-300">
@@ -448,9 +513,7 @@ export default function TodaysWorkout() {
                                 <td>
                                   <input
                                     type="number"
-                                    className={`input input-bordered input-sm w-full max-w-20 text-center ${
-                                      exerciseLogs[exerciseIndex]?.completed[setIndex] ? 'bg-base-300' : 'bg-base-200'
-                                    }`}
+                                    className="input input-bordered input-sm w-20 bg-base-200"
                                     value={exerciseLogs[exerciseIndex]?.weight[setIndex] || 0}
                                     onChange={(e) => updateExerciseLog(
                                       exerciseIndex,
@@ -458,15 +521,14 @@ export default function TodaysWorkout() {
                                       Number(e.target.value),
                                       setIndex
                                     )}
-                                    disabled={exerciseLogs[exerciseIndex]?.completed[setIndex]}
+                                    min="0"
+                                    step="1.25"
                                   />
                                 </td>
                                 <td>
                                   <input
                                     type="number"
-                                    className={`input input-bordered input-sm w-full max-w-20 text-center ${
-                                      exerciseLogs[exerciseIndex]?.completed[setIndex] ? 'bg-base-300' : 'bg-base-200'
-                                    }`}
+                                    className="input input-bordered input-sm w-20 bg-base-200"
                                     value={exerciseLogs[exerciseIndex]?.reps[setIndex] || 0}
                                     onChange={(e) => updateExerciseLog(
                                       exerciseIndex,
@@ -474,60 +536,55 @@ export default function TodaysWorkout() {
                                       Number(e.target.value),
                                       setIndex
                                     )}
-                                    disabled={exerciseLogs[exerciseIndex]?.completed[setIndex]}
+                                    min="0"
                                   />
                                 </td>
                                 <td className="text-center">
-                                  <button
-                                    className={`btn btn-circle btn-sm ${
-                                      exerciseLogs[exerciseIndex]?.completed[setIndex]
-                                        ? 'btn-success'
-                                        : 'btn-outline'
-                                    }`}
-                                    onClick={() => toggleSetCompletion(exerciseIndex, setIndex)}
-                                  >
-                                    <FaCheck />
-                                  </button>
+                                  <input
+                                    type="checkbox"
+                                    className="checkbox checkbox-sm checkbox-success"
+                                    checked={exerciseLogs[exerciseIndex]?.completed[setIndex] || false}
+                                    onChange={(e) => toggleSetCompletion(exerciseIndex, setIndex)}
+                                  />
                                 </td>
                                 <td className="text-center">
-                                  <button
-                                    className="btn btn-circle btn-sm btn-outline btn-error"
+                                  <button 
+                                    className="btn btn-sm btn-circle bg-base-300 hover:bg-base-200"
                                     onClick={() => removeSet(exerciseIndex, setIndex)}
                                   >
-                                    <FaMinus />
+                                    <FaMinus size={12} />
                                   </button>
                                 </td>
                               </tr>
                             ))}
-                          </tbody>
-                          <tfoot>
                             <tr>
                               <td colSpan={5} className="text-center">
-                                <button
-                                  className="btn btn-sm btn-outline mt-2 w-full sm:w-auto"
+                                <button 
+                                  className="btn btn-sm bg-base-300 hover:bg-base-200 mt-2"
                                   onClick={() => addSet(exerciseIndex)}
                                 >
                                   <FaPlus className="mr-2" /> Add Set
                                 </button>
                               </td>
                             </tr>
-                          </tfoot>
+                          </tbody>
                         </table>
                       </div>
                       
                       <div className="form-control">
                         <label className="label">
-                          <span className="label-text font-medium">Exercise Notes</span>
+                          <span className="label-text text-sm">Notes for this exercise</span>
                         </label>
                         <textarea
-                          className="textarea textarea-bordered bg-base-300 h-20"
-                          placeholder="Add notes for this exercise..."
+                          className="textarea textarea-bordered textarea-sm bg-base-300"
+                          placeholder="Any notes for this exercise..."
                           value={exerciseLogs[exerciseIndex]?.notes || ''}
                           onChange={(e) => updateExerciseLog(
                             exerciseIndex,
                             'notes',
                             e.target.value
                           )}
+                          rows={2}
                         ></textarea>
                       </div>
                     </div>
@@ -537,80 +594,61 @@ export default function TodaysWorkout() {
             ))}
           </div>
           
-          {/* Save Button - Fixed at Bottom for Mobile */}
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-base-100 border-t border-base-300 md:hidden z-10">
-            <button
-              className="btn btn-primary w-full"
-              onClick={saveWorkoutLog}
-              disabled={saveLoading || !selectedWorkout}
-            >
-              {saveLoading ? (
-                <span className="loading loading-spinner loading-sm"></span>
-              ) : (
-                <FaSave className="mr-2" />
-              )}
-              {todaysWorkoutLogged ? 'Update Log' : 'Save Workout'}
-            </button>
-          </div>
-          
-          {/* Add padding at the bottom on mobile to accommodate the fixed save button */}
-          <div className="h-16 md:hidden"></div>
-        </>
-      )}
-      
-      {/* Workout Selector Modal */}
-      {showWorkoutSelector && (
-        <div className="modal modal-open">
-          <div className="modal-box bg-base-200 max-w-xl">
-            <h3 className="font-bold text-lg mb-4">Select a Workout</h3>
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {workoutPlans.map(workout => (
-                <div
-                  key={workout.id}
-                  className={`card bg-base-300 hover:bg-base-300/80 cursor-pointer transition-colors ${
-                    selectedWorkout?.id === workout.id ? 'ring-2 ring-primary' : ''
-                  }`}
-                  onClick={() => {
-                    selectWorkout(workout);
-                    setShowWorkoutSelector(false);
-                  }}
-                >
-                  <div className="card-body p-4">
-                    <div className="flex items-center gap-3">
-                      {workout.image_url && (
-                        <div className="h-16 w-16 rounded-lg overflow-hidden">
-                          <img 
-                            src={workout.image_url} 
-                            alt={workout.name} 
-                            className="h-full w-full object-cover"
-                          />
+          {/* Workout Selector Modal */}
+          {showWorkoutSelector && (
+            <div className="modal modal-open">
+              <div className="modal-box bg-base-200 max-w-xl">
+                <h3 className="font-bold text-lg mb-4">Select a Workout</h3>
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {workoutPlans.map(workout => (
+                    <div
+                      key={workout.id}
+                      className={`card bg-base-300 hover:bg-base-300/80 cursor-pointer transition-colors ${
+                        selectedWorkout?.id === workout.id ? 'ring-2 ring-primary' : ''
+                      }`}
+                      onClick={() => {
+                        selectWorkout(workout);
+                        setShowWorkoutSelector(false);
+                      }}
+                    >
+                      <div className="card-body p-4">
+                        <div className="flex items-center gap-3">
+                          {workout.image_url && (
+                            <div className="h-16 w-16 rounded-lg overflow-hidden">
+                              <img 
+                                src={workout.image_url} 
+                                alt={workout.name} 
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                          )}
+                          <div>
+                            <h4 className="font-medium">{workout.name}</h4>
+                            <p className="text-sm text-base-content/70 line-clamp-1">
+                              {workout.description || "No description"}
+                            </p>
+                            <p className="text-xs text-base-content/70 mt-1">
+                              {workout.workout_plan_exercises.length} exercises
+                            </p>
+                          </div>
                         </div>
-                      )}
-                      <div>
-                        <h4 className="font-medium">{workout.name}</h4>
-                        <p className="text-sm text-base-content/70 line-clamp-1">
-                          {workout.description || "No description"}
-                        </p>
-                        <p className="text-xs text-base-content/70 mt-1">
-                          {workout.workout_plan_exercises.length} exercises
-                        </p>
                       </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
+                <div className="modal-action">
+                  <button
+                    className="btn btn-ghost"
+                    onClick={() => setShowWorkoutSelector(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+              <div className="modal-backdrop" onClick={() => setShowWorkoutSelector(false)}></div>
             </div>
-            <div className="modal-action">
-              <button
-                className="btn btn-ghost"
-                onClick={() => setShowWorkoutSelector(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-          <div className="modal-backdrop" onClick={() => setShowWorkoutSelector(false)}></div>
-        </div>
+          )}
+        </>
       )}
     </div>
   );
